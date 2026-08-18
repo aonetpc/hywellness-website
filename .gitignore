@@ -1,0 +1,21 @@
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 保留 GitHub Actions 配置
+.github/*
+!.github/workflows/
+!.github/workflows/**
+
+# 保留部署脚本
+deploy/*.log
+deploy/.env
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+
+# 环境
+.env
+.env.local

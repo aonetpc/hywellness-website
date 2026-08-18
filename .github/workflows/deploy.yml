@@ -1,0 +1,58 @@
+name: Deploy Hywellness Website
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 10m
+          script: |
+            set -e
+
+            DEPLOY_DIR="/var/www/hywellness"
+
+            echo "=== 部署和尔盛世官网 ==="
+            echo "目标目录: $DEPLOY_DIR"
+
+            sudo mkdir -p "$DEPLOY_DIR"
+
+            echo "同步文件（仅覆盖官网目录，绝不影响OA系统）..."
+            sudo rsync -avz --delete \
+              --exclude='.git' \
+              --exclude='.github' \
+              --exclude='deploy' \
+              --exclude='README*' \
+              ./ "$DEPLOY_DIR"/
+
+            sudo chown -R ubuntu:ubuntu "$DEPLOY_DIR"
+
+            echo "✅ 文件部署完成"
+
+            echo "=== 验证 ==="
+            if sudo test -f "$DEPLOY_DIR/index.html"; then
+              echo "✅ index.html 存在"
+            else
+              echo "❌ index.html 缺失"
+              exit 1
+            fi
+
+            echo "=== 检查 Nginx 配置 ==="
+            sudo nginx -t
+            sudo systemctl reload nginx
+
+            echo "=== 完成 ==="
+            echo "官网已部署: https://www.hywellness.com"
